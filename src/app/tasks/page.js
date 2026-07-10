@@ -97,6 +97,11 @@ export default function TodayPage() {
   // Re-run Rough.js whenever dynamic lists or focus changes
   const roughRef = useRough([tasks, loading, quickAddFocused, expandedSections, doneExpanded, completingId]);
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push('/login');
+  }
+
   async function handleSwipeRight(id) {
     if (completingId) return;
     setCompletingId(id);
@@ -163,11 +168,22 @@ export default function TodayPage() {
       {/* Header */}
       <div className="page-header">
         <div className="page-title">{getTodayHeader()}</div>
-        {currentProfile && (
-          <div className="avatar" style={{ background: currentProfile.avatar_color || '#6366f1' }} data-rough="circle">
-            {currentProfile.initial}
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={handleLogout}
+            style={{ fontSize: 11, color: '#6b7280', padding: '4px 8px', zIndex: 12, position: 'relative' }}
+            data-rough="rect"
+            data-rough-radius="5"
+            data-rough-color="#ef4444"
+          >
+            Logout
+          </button>
+          {currentProfile && (
+            <div className="avatar" style={{ background: currentProfile.avatar_color || '#6366f1' }} data-rough="circle">
+              {currentProfile.initial}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Quick Add */}
