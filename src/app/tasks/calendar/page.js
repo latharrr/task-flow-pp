@@ -117,19 +117,40 @@ export default function CalendarPage() {
           <div className="page-title">{MONTH_NAMES[currentMonth]} {currentYear}</div>
           <button onClick={handleNextMonth} style={{ fontSize: 18, color: '#6b7280' }}>›</button>
         </div>
-        <button
-          className="calendar-today-btn"
-          onClick={() => {
-            const todayD = new Date();
-            setCurrentMonth(todayD.getMonth());
-            setCurrentYear(todayD.getFullYear());
-            setSelectedDate(today);
-          }}
-          data-rough="rect"
-          data-rough-radius="999"
-        >
-          Today
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <a
+            href="/TaskFlow.apk"
+            download
+            style={{
+              fontSize: 11,
+              fontWeight: '700',
+              color: '#ffffff',
+              background: '#22c55e',
+              padding: '4px 8px',
+              borderRadius: '5px',
+              border: '1.5px solid #111827',
+              boxShadow: '1.5px 1.5px 0px 0px #111827',
+              textDecoration: 'none',
+              zIndex: 12,
+              position: 'relative'
+            }}
+          >
+            Download APK
+          </a>
+          <button
+            className="calendar-today-btn"
+            onClick={() => {
+              const todayD = new Date();
+              setCurrentMonth(todayD.getMonth());
+              setCurrentYear(todayD.getFullYear());
+              setSelectedDate(today);
+            }}
+            data-rough="rect"
+            data-rough-radius="999"
+          >
+            Today
+          </button>
+        </div>
       </div>
 
       {/* Weekdays */}
