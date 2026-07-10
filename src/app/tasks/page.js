@@ -1,6 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { todayStr, addDays, getTodayHeader, STATUS_META, PRIORITY_OPTIONS } from '@/lib/utils';
 import { useRough } from '@/lib/hooks/useRough';
@@ -11,6 +12,7 @@ import EmptyState from '@/components/EmptyState';
 
 export default function TodayPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [profiles, setProfiles] = useState([]);
@@ -78,6 +80,18 @@ export default function TodayPage() {
       supabase.removeChannel(channel);
     };
   }, [loadData]);
+
+  useEffect(() => {
+    if (!loading && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'quickadd') {
+        setTimeout(() => {
+          inputRef.current?.focus();
+          setQuickAddFocused(true);
+        }, 100);
+      }
+    }
+  }, [loading]);
 
   // Filter tasks
   const todayTasks = tasks.filter((t) => t.date === today);
