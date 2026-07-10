@@ -24,16 +24,15 @@ export async function POST(request) {
       return NextResponse.json({ error: authError.message }, { status: 400 });
     }
 
-    // Create profile
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: authData.user.id,
+    // Update the profile that was automatically created by the trigger
+    const { error: profileError } = await supabase.from('profiles').update({
       full_name,
       initial: initial || full_name.charAt(0).toUpperCase(),
       email,
       role: role || 'member',
       max_tasks: max_tasks || 6,
       avatar_color: avatar_color || '#6366f1',
-    });
+    }).eq('id', authData.user.id);
 
     if (profileError) {
       // Clean up created user in case profile creation fails
