@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { todayStr, dayDiff, getCapacityLabel, getCapacityPercent } from '@/lib/utils';
+import { useRough } from '@/lib/hooks/useRough';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import TaskDetail from '@/components/TaskDetail';
 
@@ -46,6 +47,9 @@ export default function TeamPage() {
     };
   }, [loadData]);
 
+  // Re-run Rough.js whenever tasks load
+  const roughRef = useRough([tasks, loading]);
+
   if (loading) return <LoadingSkeleton />;
 
   // Filter tasks
@@ -67,7 +71,7 @@ export default function TeamPage() {
   const isFlowing = !hasBlockers && !hasOverdue;
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '0 0 16px', overflowY: 'auto', animation: 'contentFadeIn 200ms ease-out' }}>
+    <div ref={roughRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '0 0 16px', overflowY: 'auto', animation: 'contentFadeIn 200ms ease-out' }}>
       {/* Header */}
       <div className="page-header" style={{ paddingBottom: 12 }}>
         <div className="page-title">Team Pulse</div>
@@ -76,7 +80,7 @@ export default function TeamPage() {
       <div style={{ padding: '0 16px' }}>
         {/* Blockers alert */}
         {hasBlockers && (
-          <div className="team-blockers">
+          <div className="team-blockers" data-rough="rect" data-rough-radius="8">
             <div className="team-blockers-title">
               {blocked.length} blocker{blocked.length !== 1 ? 's' : ''} need action
             </div>
@@ -87,6 +91,8 @@ export default function TeamPage() {
                   key={t.id}
                   className="team-blocker-card"
                   onClick={() => setSelectedTaskId(t.id)}
+                  data-rough="rect"
+                  data-rough-radius="8"
                 >
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
                     {t.name}
@@ -103,9 +109,9 @@ export default function TeamPage() {
         {/* Workload */}
         <div className="workload-title">Workload</div>
         {teamWorkload.map((m) => (
-          <div key={m.id} className="workload-card">
+          <div key={m.id} className="workload-card" data-rough="rect" data-rough-radius="8">
             <div className="workload-row">
-              <div className="avatar avatar-sm" style={{ background: m.avatar_color || '#6366f1' }}>
+              <div className="avatar avatar-sm" style={{ background: m.avatar_color || '#6366f1' }} data-rough="circle">
                 {m.initial}
               </div>
               <div className="workload-info">
@@ -136,6 +142,9 @@ export default function TeamPage() {
                   key={t.id}
                   className="overdue-card"
                   onClick={() => setSelectedTaskId(t.id)}
+                  data-rough="rect"
+                  data-rough-radius="8"
+                  data-rough-color="#ef4444"
                 >
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
                     {t.name}

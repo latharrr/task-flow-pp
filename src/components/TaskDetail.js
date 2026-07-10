@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { formatMinutes, STATUS_META, timeAgo } from '@/lib/utils';
+import { useRough } from '@/lib/hooks/useRough';
 import StatusPicker from './StatusPicker';
 import TeamPicker from './TeamPicker';
 
@@ -44,6 +45,9 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
     setAttachments(attRes.data || []);
     setLoading(false);
   }
+
+  // Draw hand-drawn sketched borders inside the sheet whenever content changes
+  const roughRef = useRough([task, loading, editingName, showStatusPicker, showTeamPicker, subtasks, comments, attachments, activityExpanded]);
 
   async function updateTask(updates) {
     await supabase.from('tasks').update(updates).eq('id', taskId);
@@ -179,20 +183,22 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
   const doneCount = subtasks.filter((s) => s.done).length;
 
   return (
-    <div className="sheet-overlay" onClick={onClose}>
-      <div className="bottom-sheet" onClick={(e) => e.stopPropagation()}>
+    <div className="sheet-overlay" onClick={onClose} ref={roughRef}>
+      <div className="bottom-sheet" onClick={(e) => e.stopPropagation()} data-rough="rect" data-rough-radius="16">
         <div className="sheet-handle" />
 
         {/* Title */}
         {editingName ? (
-          <input
-            className="detail-title-input"
-            value={titleDraft}
-            onChange={(e) => setTitleDraft(e.target.value)}
-            onBlur={handleTitleSave}
-            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
-            autoFocus
-          />
+          <div style={{ position: 'relative' }} data-rough="rect" data-rough-radius="6">
+            <input
+              className="detail-title-input"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+              autoFocus
+            />
+          </div>
         ) : (
           <div
             className="detail-title"
@@ -211,17 +217,20 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
             className="status-pill"
             style={{ background: meta.bg, color: meta.color }}
             onClick={() => setShowStatusPicker(true)}
+            data-rough="rect"
+            data-rough-radius="999"
+            data-rough-color={meta.color}
           >
             {meta.label}
           </button>
-          <span className="detail-pill">{task.priority}</span>
-          {task.deadline && <span className="detail-pill">{task.deadline}</span>}
+          <span className="detail-pill" data-rough="rect" data-rough-radius="999">{task.priority}</span>
+          {task.deadline && <span className="detail-pill" data-rough="rect" data-rough-radius="999">{task.deadline}</span>}
         </div>
 
         {/* Assignee */}
         <div className="detail-assignee">
           {assignee && (
-            <div className="avatar" style={{ background: assignee.avatar_color || '#6366f1' }}>
+            <div className="avatar" style={{ background: assignee.avatar_color || '#6366f1' }} data-rough="circle">
               {assignee.initial}
             </div>
           )}
@@ -243,7 +252,7 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
         {/* Project */}
         {task.projects?.name && (
           <div className="mb-12">
-            <span className="detail-project-tag">{task.projects.name}</span>
+            <span className="detail-project-tag" data-rough="rect" data-rough-radius="999">{task.projects.name}</span>
           </div>
         )}
 
@@ -260,6 +269,9 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
             >
               <span
                 className={`subtask-check ${sub.done ? 'subtask-check-done' : 'subtask-check-pending'}`}
+                data-rough="rect"
+                data-rough-radius="4"
+                data-rough-color={sub.done ? '#22c55e' : '#1f2937'}
               >
                 {sub.done ? '✓' : ''}
               </span>
@@ -271,8 +283,8 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
         </div>
 
         {/* Time Tracker */}
-        <div className="time-tracker">
-          <button className="time-tracker-btn" onClick={handleToggleTracking}>
+        <div className="time-tracker" data-rough="rect" data-rough-radius="8">
+          <button className="time-tracker-btn" onClick={handleToggleTracking} data-rough="circle">
             {task.tracking ? (
               <svg viewBox="0 0 16 16" width="14" height="14">
                 <rect x="4" y="3" width="3" height="10" fill="currentColor" />
@@ -298,11 +310,11 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
         <div className="detail-section-title">Attachments</div>
         <div className="attachments-row">
           {attachments.map((att) => (
-            <span key={att.id} className="attachment-pill">
+            <span key={att.id} className="attachment-pill" data-rough="rect" data-rough-radius="999">
               {att.name}
             </span>
           ))}
-          <button className="attachment-add" onClick={handleAddAttachment}>
+          <button className="attachment-add" onClick={handleAddAttachment} data-rough="rect" data-rough-radius="999">
             Add
           </button>
         </div>
@@ -311,7 +323,7 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
         {task.status === 'blocked' && (
           <>
             <div className="detail-section-title">Blocker reason</div>
-            <div className="blocker-box">
+            <div className="blocker-box" data-rough="rect" data-rough-radius="8" data-rough-color="#ef4444">
               <textarea
                 className="blocker-textarea"
                 value={task.blocker_reason || ''}
@@ -330,6 +342,7 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
               <div
                 className="avatar avatar-sm"
                 style={{ background: c.profiles?.avatar_color || '#8b5cf6' }}
+                data-rough="circle"
               >
                 {c.profiles?.initial || '?'}
               </div>
@@ -343,7 +356,7 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
           ))}
         </div>
         <div className="comment-input-row">
-          <div className="comment-input-wrap">
+          <div className="comment-input-wrap" data-rough="rect" data-rough-radius="999">
             <input
               className="comment-input"
               value={commentDraft}
@@ -352,7 +365,7 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
               placeholder="Add a comment"
             />
           </div>
-          <button className="comment-send-btn" onClick={handleCommentSubmit}>
+          <button className="comment-send-btn" onClick={handleCommentSubmit} data-rough="rect" data-rough-radius="999">
             Send
           </button>
         </div>
@@ -384,18 +397,27 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
           <button
             className="detail-action-btn detail-action-done"
             onClick={handleMarkDone}
+            data-rough="rect"
+            data-rough-radius="7"
+            data-rough-color="#22c55e"
           >
             Mark Done
           </button>
           <button
             className="detail-action-btn detail-action-blocked"
             onClick={handleSetBlocked}
+            data-rough="rect"
+            data-rough-radius="7"
+            data-rough-color="#ef4444"
           >
             Set Blocked
           </button>
           <button
             className="detail-action-btn detail-action-handoff"
             onClick={() => setShowTeamPicker('handoff')}
+            data-rough="rect"
+            data-rough-radius="7"
+            data-rough-color="#6366f1"
           >
             Hand Off
           </button>

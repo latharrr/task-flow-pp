@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { todayStr, pad2, MONTH_NAMES, STATUS_META, formatDateLabel } from '@/lib/utils';
+import { useRough } from '@/lib/hooks/useRough';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import TaskDetail from '@/components/TaskDetail';
 
@@ -56,6 +57,9 @@ export default function CalendarPage() {
     };
   }, [loadData]);
 
+  // Re-run Rough.js whenever calendar changes
+  const roughRef = useRough([tasks, loading, selectedDate, currentYear, currentMonth]);
+
   if (loading) return <LoadingSkeleton />;
 
   // Calculate calendar grid
@@ -105,7 +109,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, animation: 'contentFadeIn 200ms ease-out' }}>
+    <div ref={roughRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, animation: 'contentFadeIn 200ms ease-out' }}>
       {/* Header */}
       <div className="calendar-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -121,6 +125,8 @@ export default function CalendarPage() {
             setCurrentYear(todayD.getFullYear());
             setSelectedDate(today);
           }}
+          data-rough="rect"
+          data-rough-radius="999"
         >
           Today
         </button>
@@ -145,14 +151,25 @@ export default function CalendarPage() {
           }
 
           let cellClass = 'calendar-cell';
-          if (cell.isToday) cellClass += ' calendar-cell-today';
-          else if (cell.isSelected) cellClass += ' calendar-cell-selected';
+          let roughType = 'rect';
+          let roughColor = '#d8d2c4';
+          
+          if (cell.isToday) {
+            cellClass += ' calendar-cell-today';
+            roughColor = '#1f2937'; // default
+          } else if (cell.isSelected) {
+            cellClass += ' calendar-cell-selected';
+            roughColor = '#6366f1';
+          }
 
           return (
             <div
               key={cell.key}
               className={cellClass}
               onClick={() => setSelectedDate(cell.dateStr)}
+              data-rough={roughType}
+              data-rough-radius="7"
+              data-rough-color={roughColor}
             >
               <span className={`calendar-day-num${cell.isToday || cell.isSelected ? ' calendar-day-num-bold' : ''}`}>
                 {cell.dayNum}
@@ -203,6 +220,9 @@ export default function CalendarPage() {
                 key={t.id}
                 className="calendar-task-card"
                 onClick={() => setSelectedTaskId(t.id)}
+                data-rough="rect"
+                data-rough-radius="8"
+                data-rough-color="#d1d5db"
               >
                 <span
                   className="calendar-task-dot"
@@ -218,6 +238,7 @@ export default function CalendarPage() {
                   <div
                     className="avatar avatar-sm"
                     style={{ background: assignee.avatar_color || '#6366f1' }}
+                    data-rough="circle"
                   >
                     {assignee.initial}
                   </div>

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { todayStr, addDays, getTodayHeader, STATUS_META, PRIORITY_OPTIONS } from '@/lib/utils';
+import { useRough } from '@/lib/hooks/useRough';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import TaskCard from '@/components/TaskCard';
 import TaskDetail from '@/components/TaskDetail';
@@ -93,6 +94,9 @@ export default function TodayPage() {
     return arr.slice(0, MAX_VISIBLE);
   };
 
+  // Re-run Rough.js whenever dynamic lists or focus changes
+  const roughRef = useRough([tasks, loading, quickAddFocused, expandedSections, doneExpanded, completingId]);
+
   async function handleSwipeRight(id) {
     if (completingId) return;
     setCompletingId(id);
@@ -155,12 +159,12 @@ export default function TodayPage() {
   const selectedPriority = PRIORITY_OPTIONS[priorityIdx % PRIORITY_OPTIONS.length];
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, animation: 'contentFadeIn 200ms ease-out' }}>
+    <div ref={roughRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, animation: 'contentFadeIn 200ms ease-out' }}>
       {/* Header */}
       <div className="page-header">
         <div className="page-title">{getTodayHeader()}</div>
         {currentProfile && (
-          <div className="avatar" style={{ background: currentProfile.avatar_color || '#6366f1' }}>
+          <div className="avatar" style={{ background: currentProfile.avatar_color || '#6366f1' }} data-rough="circle">
             {currentProfile.initial}
           </div>
         )}
@@ -169,7 +173,7 @@ export default function TodayPage() {
       {/* Quick Add */}
       <div className="quick-add-wrapper">
         <div className="quick-add-row">
-          <div className="quick-add-input-wrap">
+          <div className="quick-add-input-wrap" data-rough="rect" data-rough-radius="999">
             <input
               ref={inputRef}
               className="quick-add-input"
@@ -181,25 +185,31 @@ export default function TodayPage() {
               placeholder="What needs to happen?"
             />
           </div>
-          <button className="quick-add-btn" onClick={handleQuickAdd}>+</button>
+          <button className="quick-add-btn" onClick={handleQuickAdd} data-rough="circle">+</button>
         </div>
         {showChips && (
           <div className="chips-row">
             <button
               className="chip chip-assign"
               onClick={() => setAssigneeIdx((i) => i + 1)}
+              data-rough="rect"
+              data-rough-radius="999"
             >
               Assign: {assignee?.initial || '?'}
             </button>
             <button
               className="chip chip-project"
               onClick={() => setProjectIdx((i) => i + 1)}
+              data-rough="rect"
+              data-rough-radius="999"
             >
               {selectedProject?.name || 'Project'}
             </button>
             <button
               className="chip chip-priority"
               onClick={() => setPriorityIdx((i) => i + 1)}
+              data-rough="rect"
+              data-rough-radius="999"
             >
               Priority: {selectedPriority}
             </button>
@@ -226,7 +236,7 @@ export default function TodayPage() {
 
         {/* Blocked */}
         {blocked.length > 0 && (
-          <div className="task-section task-section-blocked">
+          <div className="task-section task-section-blocked" data-rough="rect" data-rough-radius="8" data-rough-color="#ef4444">
             <div className="section-header">
               <span className="section-dot" style={{ background: '#ef4444' }} />
               <span className="section-title">Blocked</span>
@@ -256,7 +266,7 @@ export default function TodayPage() {
 
         {/* In Progress */}
         {inProgress.length > 0 && (
-          <div className="task-section task-section-inprogress">
+          <div className="task-section task-section-inprogress" data-rough="rect" data-rough-radius="8" data-rough-color="#f59e0b">
             <div className="section-header">
               <span className="section-dot" style={{ background: '#f59e0b' }} />
               <span className="section-title">In Progress</span>
@@ -286,7 +296,7 @@ export default function TodayPage() {
 
         {/* To Do */}
         {todo.length > 0 && (
-          <div className="task-section task-section-todo">
+          <div className="task-section task-section-todo" data-rough="rect" data-rough-radius="8" data-rough-color="#3b82f6">
             <div className="section-header">
               <span className="section-dot" style={{ background: '#3b82f6' }} />
               <span className="section-title">To Do</span>
@@ -316,7 +326,7 @@ export default function TodayPage() {
 
         {/* Done */}
         {allDone.length > 0 && (
-          <div className="task-section task-section-done">
+          <div className="task-section task-section-done" data-rough="rect" data-rough-radius="8" data-rough-color="#22c55e">
             <div className="done-header" onClick={() => setDoneExpanded(!doneExpanded)}>
               <div className="done-header-left">
                 <span className="section-dot" style={{ background: '#22c55e' }} />

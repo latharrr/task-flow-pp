@@ -1,5 +1,6 @@
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
+import { useRough } from '@/lib/hooks/useRough';
 
 const tabs = [
   {
@@ -45,13 +46,16 @@ export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
 
+  // Add topline hand-drawn border effect to bottom navigation
+  const roughRef = useRough([pathname]);
+
   function isActive(href) {
     if (href === '/tasks') return pathname === '/tasks';
     return pathname.startsWith(href);
   }
 
   return (
-    <div className="bottom-nav">
+    <div className="bottom-nav" ref={roughRef} data-rough="topline">
       {tabs.map((tab) => {
         const active = isActive(tab.href);
         return (

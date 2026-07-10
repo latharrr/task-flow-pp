@@ -14,7 +14,7 @@ export default function TaskCard({
 
   if (variant === 'done') {
     return (
-      <div className="task-card" onClick={() => onOpen(task.id)}>
+      <div className="task-card" onClick={() => onOpen(task.id)} data-rough="rect" data-rough-radius="9">
         <div className="task-card-body">
           <span className="task-card-name done">{task.name}</span>
         </div>
@@ -26,6 +26,8 @@ export default function TaskCard({
     <div
       className={`task-card${completing ? ' completing' : ''}`}
       onClick={() => onOpen(task.id)}
+      data-rough="rect"
+      data-rough-radius="9"
     >
       {variant === 'todo' && (
         <button
@@ -34,6 +36,8 @@ export default function TaskCard({
             e.stopPropagation();
             onSwipeRight(task.id);
           }}
+          data-rough="rect"
+          data-rough-radius="3"
         />
       )}
       <div className="task-card-body">
@@ -46,7 +50,9 @@ export default function TaskCard({
         {(variant === 'inprogress' || variant === 'todo') && (
           <div className="task-card-meta">
             {task.project_name && (
-              <span className="task-card-tag">{task.project_name}</span>
+              <span className="task-card-tag" data-rough="rect" data-rough-radius="999">
+                {task.project_name}
+              </span>
             )}
             {variant === 'inprogress' && (
               <span className="task-card-time">
@@ -63,6 +69,7 @@ export default function TaskCard({
         <div
           className="avatar avatar-sm"
           style={{ background: assignee.avatar_color || '#6366f1' }}
+          data-rough="circle"
         >
           {assignee.initial}
         </div>
@@ -75,6 +82,8 @@ export default function TaskCard({
             e.stopPropagation();
             onSwipeLeft(task.id);
           }}
+          data-rough="rect"
+          data-rough-radius="5"
         >
           ‹
         </button>
@@ -85,6 +94,8 @@ export default function TaskCard({
             e.stopPropagation();
             onSwipeRight(task.id);
           }}
+          data-rough="rect"
+          data-rough-radius="5"
         >
           ›
         </button>
