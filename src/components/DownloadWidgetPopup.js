@@ -77,38 +77,60 @@ export default function DownloadWidgetPopup() {
         </div>
 
         {/* Buttons */}
-        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+        <div style={{ display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
+          <a 
+            href="/TaskFlow.apk" 
+            download 
+            onClick={handleDismiss}
+            style={{
+              flex: 1,
+              minWidth: '100px',
+              background: '#22c55e',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: '700',
+              padding: '8px 6px',
+              borderRadius: '6px',
+              border: '1.5px solid #111827',
+              boxShadow: '1.5px 1.5px 0px 0px #111827',
+              textAlign: 'center',
+              textDecoration: 'none'
+            }}
+          >
+            Download APK
+          </a>
           <button 
             onClick={() => setShowInstructions(true)}
             style={{
               flex: 1,
+              minWidth: '100px',
               background: '#6366f1',
               color: '#ffffff',
-              fontSize: '12px',
-              fontWeight: '600',
-              padding: '8px 12px',
+              fontSize: '11px',
+              fontWeight: '700',
+              padding: '8px 6px',
               borderRadius: '6px',
               border: '1.5px solid #111827',
-              boxShadow: '2px 2px 0px 0px #111827',
+              boxShadow: '1.5px 1.5px 0px 0px #111827',
               textAlign: 'center'
             }}
           >
-            Get Android Widget
+            Widget Guide
           </button>
           <button 
             onClick={handleDismiss}
             style={{
               background: '#f3f4f6',
               color: '#374151',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: '500',
-              padding: '8px 12px',
+              padding: '8px 10px',
               borderRadius: '6px',
               border: '1.5px solid #d1d5db',
               textAlign: 'center'
             }}
           >
-            Maybe Later
+            Later
           </button>
         </div>
       </div>
@@ -207,6 +229,37 @@ export default function DownloadWidgetPopup() {
               </div>
             </div>
 
+            {/* Download APK Button inside Modal */}
+            <a
+              href="/TaskFlow.apk"
+              download
+              onClick={() => {
+                setShowInstructions(false);
+                handleDismiss();
+              }}
+              style={{
+                display: 'block',
+                width: '100%',
+                background: '#22c55e',
+                color: '#ffffff',
+                fontSize: '13px',
+                fontWeight: '700',
+                padding: '10px 0',
+                borderRadius: '8px',
+                border: '1.5px solid #111827',
+                boxShadow: '3px 3px 0px 0px #111827',
+                textAlign: 'center',
+                textDecoration: 'none',
+                marginTop: '10px'
+              }}
+            >
+              📥 Download Android App (.apk)
+            </a>
+
+            <div style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', lineHeight: '1.4' }}>
+              Once installed, simply log in to sync your tasks securely in real-time.
+            </div>
+
             {/* Close Button */}
             <button 
               onClick={() => {
@@ -227,7 +280,7 @@ export default function DownloadWidgetPopup() {
                 marginTop: '4px'
               }}
             >
-              Awesome, Got It!
+              Close Guide
             </button>
           </div>
         </div>
