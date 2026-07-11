@@ -6,9 +6,9 @@ import { useRough } from '@/lib/hooks/useRough';
 import StatusPicker from './StatusPicker';
 import TeamPicker from './TeamPicker';
 
-export default function TaskDetail({ taskId, profiles, currentUser, onClose, onRefresh }) {
+export default function TaskDetail({ taskId, initialTask, profiles, currentUser, onClose, onRefresh }) {
   const supabase = createClient();
-  const [task, setTask] = useState(null);
+  const [task, setTask] = useState(initialTask || null);
   const [subtasks, setSubtasks] = useState([]);
   const [comments, setComments] = useState([]);
   const [activity, setActivity] = useState([]);
@@ -23,6 +23,7 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
   const trackingRef = useRef(null);
 
   useEffect(() => {
+    setTask(initialTask || null);
     loadTask();
     return () => {
       if (trackingRef.current) clearInterval(trackingRef.current);
@@ -176,7 +177,7 @@ export default function TaskDetail({ taskId, profiles, currentUser, onClose, onR
     );
   }
 
-  if (!task || loading) return null;
+  if (!task) return null;
 
   const meta = STATUS_META[task.status];
   const assignee = profiles?.find((p) => p.id === task.assignee_id);

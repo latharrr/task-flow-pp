@@ -255,6 +255,7 @@ export default function CalendarPage() {
       {selectedTaskId && (
         <TaskDetail
           taskId={selectedTaskId}
+          initialTask={tasks.find((t) => t.id === selectedTaskId)}
           profiles={profiles}
           currentUser={{ ...currentUser, ...currentProfile }}
           onClose={() => setSelectedTaskId(null)}

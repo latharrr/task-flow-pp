@@ -388,6 +388,7 @@ export default function TodayPage() {
       {selectedTaskId && (
         <TaskDetail
           taskId={selectedTaskId}
+          initialTask={tasks.find((t) => t.id === selectedTaskId)}
           profiles={profiles}
           currentUser={{ ...currentUser, ...currentProfile }}
           onClose={() => setSelectedTaskId(null)}
