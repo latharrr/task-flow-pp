@@ -13,6 +13,7 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
   const [comments, setComments] = useState([]);
   const [activity, setActivity] = useState([]);
   const [attachments, setAttachments] = useState([]);
+  const [collaborators, setCollaborators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
@@ -35,23 +36,25 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
 
   async function loadTask() {
     setLoading(true);
-    const [taskRes, subRes, comRes, actRes, attRes] = await Promise.all([
+    const [taskRes, subRes, comRes, actRes, attRes, collabRes] = await Promise.all([
       supabase.from('tasks').select('*, projects(name)').eq('id', taskId).single(),
       supabase.from('subtasks').select('*').eq('task_id', taskId).order('sort_order'),
       supabase.from('comments').select('*, profiles(full_name, initial, avatar_color)').eq('task_id', taskId).order('created_at'),
       supabase.from('activity_log').select('*, profiles(full_name)').eq('task_id', taskId).order('created_at', { ascending: false }),
       supabase.from('attachments').select('*').eq('task_id', taskId),
+      supabase.from('task_collaborators').select('profiles(*)').eq('task_id', taskId),
     ]);
     setTask(taskRes.data);
     setSubtasks(subRes.data || []);
     setComments(comRes.data || []);
     setActivity(actRes.data || []);
     setAttachments(attRes.data || []);
+    setCollaborators((collabRes.data || []).map((c) => c.profiles).filter(Boolean));
     setLoading(false);
   }
 
   // Draw hand-drawn sketched borders inside the sheet whenever content changes
-  const roughRef = useRough([task, loading, editingName, showStatusPicker, showTeamPicker, subtasks, comments, attachments, activityExpanded, uploading]);
+  const roughRef = useRough([task, loading, editingName, showStatusPicker, showTeamPicker, subtasks, comments, attachments, collaborators, activityExpanded, uploading]);
 
   async function updateTask(updates) {
     await supabase.from('tasks').update(updates).eq('id', taskId);
@@ -207,6 +210,20 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
     setShowTeamPicker(null);
   }
 
+  async function handleToggleCollaborator(member) {
+    const isCollaborator = collaborators.some((c) => c.id === member.id);
+    if (isCollaborator) {
+      await supabase.from('task_collaborators').delete().eq('task_id', taskId).eq('profile_id', member.id);
+      setCollaborators((prev) => prev.filter((c) => c.id !== member.id));
+      await addActivity(`Removed ${member.full_name} as a collaborator.`);
+    } else {
+      await supabase.from('task_collaborators').insert({ task_id: taskId, profile_id: member.id });
+      setCollaborators((prev) => [...prev, member]);
+      await addActivity(`Added ${member.full_name} as a collaborator.`);
+    }
+    onRefresh?.();
+  }
+
   if (showStatusPicker) {
     return (
       <StatusPicker
@@ -217,12 +234,21 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
   }
 
   if (showTeamPicker) {
+    const isCollabMode = showTeamPicker === 'collaborators';
     return (
       <TeamPicker
-        title={showTeamPicker === 'handoff' ? 'Hand off to' : 'Change assignee'}
-        profiles={profiles}
-        onSelect={handleTeamSelect}
+        title={
+          showTeamPicker === 'handoff'
+            ? 'Hand off to'
+            : isCollabMode
+              ? 'Add collaborators'
+              : 'Change assignee'
+        }
+        profiles={isCollabMode ? profiles.filter((p) => p.id !== task?.assignee_id) : profiles}
+        onSelect={isCollabMode ? handleToggleCollaborator : handleTeamSelect}
         onClose={() => setShowTeamPicker(null)}
+        multiple={isCollabMode}
+        selectedIds={collaborators.map((c) => c.id)}
       />
     );
   }
@@ -298,6 +324,28 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
           >
             Change
           </a>
+        </div>
+
+        {/* Collaborators */}
+        <div className="detail-collaborators">
+          {collaborators.map((c) => (
+            <div
+              key={c.id}
+              className="avatar avatar-sm"
+              style={{ background: c.avatar_color || '#6366f1' }}
+              data-rough="circle"
+              title={c.full_name}
+            >
+              {c.initial}
+            </div>
+          ))}
+          <button
+            type="button"
+            className="detail-collaborators-add"
+            onClick={() => setShowTeamPicker('collaborators')}
+          >
+            {collaborators.length > 0 ? '+ Add' : '+ Add collaborator'}
+          </button>
         </div>
 
         {/* Project */}

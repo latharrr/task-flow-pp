@@ -32,12 +32,13 @@ export default function CalendarPage() {
       setCurrentProfile(profile);
     }
     const [tasksRes, profilesRes] = await Promise.all([
-      supabase.from('tasks').select('*, projects(name)').order('created_at', { ascending: false }),
+      supabase.from('tasks').select('*, projects(name), task_collaborators(profile_id)').order('created_at', { ascending: false }),
       supabase.from('profiles').select('*').order('full_name'),
     ]);
     const enriched = (tasksRes.data || []).map((t) => ({
       ...t,
       project_name: t.projects?.name || null,
+      collaborator_ids: (t.task_collaborators || []).map((c) => c.profile_id),
     }));
     setTasks(enriched);
     setProfiles(profilesRes.data || []);

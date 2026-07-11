@@ -74,6 +74,11 @@ export default function TaskCard({
           {assignee.initial}
         </div>
       )}
+      {task.collaborator_ids?.length > 0 && (
+        <span className="task-card-collab-badge" title={`+${task.collaborator_ids.length} collaborator${task.collaborator_ids.length === 1 ? '' : 's'}`}>
+          +{task.collaborator_ids.length}
+        </span>
+      )}
       <div className="task-card-actions">
         <button
           className="task-action-btn"

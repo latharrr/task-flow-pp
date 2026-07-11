@@ -26,10 +26,14 @@ export default function TeamPage() {
       setCurrentProfile(profile);
     }
     const [tasksRes, profilesRes] = await Promise.all([
-      supabase.from('tasks').select('*').order('created_at', { ascending: false }),
+      supabase.from('tasks').select('*, task_collaborators(profile_id)').order('created_at', { ascending: false }),
       supabase.from('profiles').select('*').order('full_name'),
     ]);
-    setTasks(tasksRes.data || []);
+    const enriched = (tasksRes.data || []).map((t) => ({
+      ...t,
+      collaborator_ids: (t.task_collaborators || []).map((c) => c.profile_id),
+    }));
+    setTasks(enriched);
     setProfiles(profilesRes.data || []);
     setLoading(false);
   }, []);

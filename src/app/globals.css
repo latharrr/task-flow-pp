@@ -540,6 +540,16 @@ input, textarea {
   z-index: 12;
 }
 
+.task-card-collab-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: #f3f4f6;
+  border-radius: var(--radius-pill);
+  padding: 3px 6px;
+  flex-shrink: 0;
+}
+
 .task-action-btn {
   width: 26px;
   height: 24px;
@@ -756,6 +766,23 @@ input, textarea {
 
 .detail-change-link {
   font-size: 11px;
+  z-index: 12;
+}
+
+.detail-collaborators {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.detail-collaborators-add {
+  font-size: 11px;
+  color: var(--indigo);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
   z-index: 12;
 }
 
@@ -1083,6 +1110,25 @@ input, textarea {
 .picker-option-label {
   font-size: 16px;
   color: var(--text-primary);
+}
+
+.picker-option-check {
+  margin-left: auto;
+  color: var(--indigo);
+  font-weight: 700;
+}
+
+.picker-done-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px 0;
+  background: var(--indigo);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
 }
 
 /* ===== TASK CREATE SHEET ===== */
