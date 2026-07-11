@@ -62,7 +62,7 @@ export default function TaskCreateSheet({ initialName, onClose, onCreate }) {
         <div className="sheet-handle" />
         <div className="picker-title" style={{ marginBottom: 2 }}>Add tasks for today</div>
         <div className="task-create-subtitle">
-          Add a few at once — set priority and due date for each.
+          Add a few at once, each with its own priority and due date.
         </div>
 
         <div className="task-create-rows">

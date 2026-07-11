@@ -23,14 +23,20 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
   const [showTeamPicker, setShowTeamPicker] = useState(null); // null | 'reassign' | 'handoff'
   const [uploading, setUploading] = useState(false);
   const [attachmentError, setAttachmentError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const isAdmin = currentUser?.role === 'admin';
   const trackingRef = useRef(null);
   const fileInputRef = useRef(null);
+  const blockerTimerRef = useRef(null);
 
   useEffect(() => {
     setTask(initialTask || null);
     loadTask();
     return () => {
       if (trackingRef.current) clearInterval(trackingRef.current);
+      if (blockerTimerRef.current) clearTimeout(blockerTimerRef.current);
     };
   }, [taskId]);
 
@@ -54,12 +60,17 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
   }
 
   // Draw hand-drawn sketched borders inside the sheet whenever content changes
-  const roughRef = useRough([task, loading, editingName, showStatusPicker, showTeamPicker, subtasks, comments, attachments, collaborators, activityExpanded, uploading]);
+  const roughRef = useRough([task, loading, editingName, showStatusPicker, showTeamPicker, subtasks, comments, attachments, collaborators, activityExpanded, uploading, actionError, busy, showDeleteConfirm]);
 
   async function updateTask(updates) {
-    await supabase.from('tasks').update(updates).eq('id', taskId);
+    const { error } = await supabase.from('tasks').update(updates).eq('id', taskId);
+    if (error) {
+      setActionError(error.message);
+      return false;
+    }
     setTask((t) => ({ ...t, ...updates }));
     onRefresh?.();
+    return true;
   }
 
   async function addActivity(text) {
@@ -68,40 +79,36 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
     if (data) setActivity((prev) => [data, ...prev]);
   }
 
-  // Fire-and-forget: don't let calendar sync slow down the UI.
-  function syncCalendar(action) {
-    fetch('/api/calendar/sync-task', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ taskId, action }),
-    }).catch(() => {});
-  }
-
   async function handleStatusChange(status) {
-    await updateTask({ status });
+    const ok = await updateTask({ status });
+    if (!ok) return;
     await addActivity(`Changed status to ${STATUS_META[status].label}.`);
-    if (status === 'done') syncCalendar('completed');
     setShowStatusPicker(false);
   }
 
   async function handleTitleSave() {
     const v = titleDraft.trim();
     if (v && v !== task.name) {
-      await updateTask({ name: v });
-      await addActivity('Renamed task.');
+      const ok = await updateTask({ name: v });
+      if (ok) await addActivity('Renamed task.');
     }
     setEditingName(false);
   }
 
   async function handleSubtaskToggle(sub) {
     const newDone = !sub.done;
-    await supabase.from('subtasks').update({ done: newDone }).eq('id', sub.id);
+    const { error } = await supabase.from('subtasks').update({ done: newDone }).eq('id', sub.id);
+    if (error) {
+      setActionError(error.message);
+      return;
+    }
     setSubtasks((prev) => prev.map((s) => (s.id === sub.id ? { ...s, done: newDone } : s)));
   }
 
   async function handleToggleTracking() {
     const nowTracking = !task.tracking;
-    await updateTask({ tracking: nowTracking });
+    const ok = await updateTask({ tracking: nowTracking });
+    if (!ok) return;
     if (nowTracking) {
       trackingRef.current = setInterval(async () => {
         setTask((t) => {
@@ -122,11 +129,15 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
   async function handleCommentSubmit() {
     const body = commentDraft.trim();
     if (!body) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('comments')
       .insert({ task_id: taskId, author_id: currentUser?.id, body })
       .select('*, profiles(full_name, initial, avatar_color)')
       .single();
+    if (error) {
+      setActionError(error.message);
+      return;
+    }
     if (data) setComments((prev) => [...prev, data]);
     await addActivity(`${currentUser?.full_name || 'User'} commented.`);
     setCommentDraft('');
@@ -183,36 +194,73 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
 
   async function handleRemoveAttachment(att) {
     const path = storagePathFromUrl(att.file_url);
-    if (path) await supabase.storage.from('attachments').remove([path]);
-    await supabase.from('attachments').delete().eq('id', att.id);
+    if (path) {
+      const { error: storageError } = await supabase.storage.from('attachments').remove([path]);
+      if (storageError) {
+        setActionError(storageError.message);
+        return;
+      }
+    }
+    const { error } = await supabase.from('attachments').delete().eq('id', att.id);
+    if (error) {
+      setActionError(error.message);
+      return;
+    }
     setAttachments((prev) => prev.filter((a) => a.id !== att.id));
   }
 
-  async function handleBlockerReasonChange(e) {
+  function handleBlockerReasonChange(e) {
     const val = e.target.value;
     setTask((t) => ({ ...t, blocker_reason: val }));
-    await supabase.from('tasks').update({ blocker_reason: val }).eq('id', taskId);
+    if (blockerTimerRef.current) clearTimeout(blockerTimerRef.current);
+    blockerTimerRef.current = setTimeout(async () => {
+      const { error } = await supabase.from('tasks').update({ blocker_reason: val }).eq('id', taskId);
+      if (error) setActionError(error.message);
+    }, 600);
   }
 
   async function handleMarkDone() {
-    await updateTask({ status: 'done', tracking: false });
-    await addActivity('Marked Done.');
-    syncCalendar('completed');
-    if (trackingRef.current) {
-      clearInterval(trackingRef.current);
-      trackingRef.current = null;
+    if (busy) return;
+    setBusy(true);
+    const ok = await updateTask({ status: 'done', tracking: false });
+    if (ok) {
+      await addActivity('Marked Done.');
+      if (trackingRef.current) {
+        clearInterval(trackingRef.current);
+        trackingRef.current = null;
+      }
+      onClose();
+      return;
     }
-    onClose();
+    setBusy(false);
   }
 
   async function handleSetBlocked() {
-    await updateTask({ status: 'blocked' });
-    await addActivity('Set to Blocked.');
+    if (busy) return;
+    setBusy(true);
+    const ok = await updateTask({ status: 'blocked' });
+    if (ok) await addActivity('Set to Blocked.');
+    setBusy(false);
+  }
+
+  async function handleDeleteTask() {
+    if (busy) return;
+    setBusy(true);
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (error) {
+      setActionError(error.message);
+      setBusy(false);
+      setShowDeleteConfirm(false);
+      return;
+    }
+    onRefresh?.();
+    onClose();
   }
 
   async function handleTeamSelect(member) {
     const context = showTeamPicker;
-    await updateTask({ assignee_id: member.id });
+    const ok = await updateTask({ assignee_id: member.id });
+    if (!ok) return;
     if (context === 'handoff') {
       await addActivity(`Handed off to ${member.full_name}.`);
     } else {
@@ -224,11 +272,19 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
   async function handleToggleCollaborator(member) {
     const isCollaborator = collaborators.some((c) => c.id === member.id);
     if (isCollaborator) {
-      await supabase.from('task_collaborators').delete().eq('task_id', taskId).eq('profile_id', member.id);
+      const { error } = await supabase.from('task_collaborators').delete().eq('task_id', taskId).eq('profile_id', member.id);
+      if (error) {
+        setActionError(error.message);
+        return;
+      }
       setCollaborators((prev) => prev.filter((c) => c.id !== member.id));
       await addActivity(`Removed ${member.full_name} as a collaborator.`);
     } else {
-      await supabase.from('task_collaborators').insert({ task_id: taskId, profile_id: member.id });
+      const { error } = await supabase.from('task_collaborators').insert({ task_id: taskId, profile_id: member.id });
+      if (error) {
+        setActionError(error.message);
+        return;
+      }
       setCollaborators((prev) => [...prev, member]);
       await addActivity(`Added ${member.full_name} as a collaborator.`);
     }
@@ -268,12 +324,22 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
 
   const meta = STATUS_META[task.status];
   const assignee = profiles?.find((p) => p.id === task.assignee_id);
+  const creator = profiles?.find((p) => p.id === task.created_by);
   const doneCount = subtasks.filter((s) => s.done).length;
 
   return (
     <div className="sheet-overlay" onClick={onClose} ref={roughRef}>
       <div className="bottom-sheet" onClick={(e) => e.stopPropagation()} data-rough="rect" data-rough-radius="16">
         <div className="sheet-handle" />
+        <button type="button" className="detail-close-btn" onClick={onClose} aria-label="Close">
+          ×
+        </button>
+
+        {actionError && (
+          <div className="form-error" style={{ marginTop: 0, marginBottom: 12 }}>
+            {actionError}
+          </div>
+        )}
 
         {/* Title */}
         {editingName ? (
@@ -336,6 +402,10 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
             Change
           </a>
         </div>
+
+        {creator && creator.id !== task.assignee_id && (
+          <div className="detail-assigned-by">Assigned by {creator.full_name}</div>
+        )}
 
         {/* Collaborators */}
         <div className="detail-collaborators">
@@ -532,6 +602,7 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
           <button
             className="detail-action-btn detail-action-done"
             onClick={handleMarkDone}
+            disabled={busy}
             data-rough="rect"
             data-rough-radius="7"
             data-rough-color="#22c55e"
@@ -541,6 +612,7 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
           <button
             className="detail-action-btn detail-action-blocked"
             onClick={handleSetBlocked}
+            disabled={busy}
             data-rough="rect"
             data-rough-radius="7"
             data-rough-color="#ef4444"
@@ -557,6 +629,41 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
             Hand Off
           </button>
         </div>
+
+        {/* Admin-only: delete task */}
+        {isAdmin && (
+          <div className="detail-delete-row">
+            {showDeleteConfirm ? (
+              <>
+                <span className="detail-delete-confirm-text">Delete this task?</span>
+                <button
+                  type="button"
+                  className="detail-delete-confirm-btn"
+                  onClick={handleDeleteTask}
+                  disabled={busy}
+                >
+                  {busy ? 'Deleting…' : 'Yes, delete'}
+                </button>
+                <button
+                  type="button"
+                  className="detail-delete-cancel-btn"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={busy}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="detail-delete-btn"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Delete Task
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

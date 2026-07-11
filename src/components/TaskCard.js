@@ -1,15 +1,7 @@
 'use client';
 import { truncate } from '@/lib/utils';
 
-export default function TaskCard({
-  task,
-  variant, // 'blocked' | 'inprogress' | 'todo' | 'done'
-  profiles,
-  onOpen,
-  onSwipeLeft,
-  onSwipeRight,
-  completing,
-}) {
+export default function TaskCard({ task, variant, profiles, onOpen }) {
   const assignee = profiles?.find((p) => p.id === task.assignee_id);
 
   if (variant === 'done') {
@@ -24,22 +16,11 @@ export default function TaskCard({
 
   return (
     <div
-      className={`task-card${completing ? ' completing' : ''}`}
+      className="task-card"
       onClick={() => onOpen(task.id)}
       data-rough="rect"
       data-rough-radius="9"
     >
-      {variant === 'todo' && (
-        <button
-          className="task-checkbox"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSwipeRight(task.id);
-          }}
-          data-rough="rect"
-          data-rough-radius="3"
-        />
-      )}
       <div className="task-card-body">
         <div className="task-card-name">{task.name}</div>
         {variant === 'blocked' && task.blocker_reason && (
@@ -79,32 +60,6 @@ export default function TaskCard({
           +{task.collaborator_ids.length}
         </span>
       )}
-      <div className="task-card-actions">
-        <button
-          className="task-action-btn"
-          title="Push back"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSwipeLeft(task.id);
-          }}
-          data-rough="rect"
-          data-rough-radius="5"
-        >
-          ‹
-        </button>
-        <button
-          className="task-action-btn"
-          title="Finish"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSwipeRight(task.id);
-          }}
-          data-rough="rect"
-          data-rough-radius="5"
-        >
-          ›
-        </button>
-      </div>
     </div>
   );
 }

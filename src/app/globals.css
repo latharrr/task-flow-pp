@@ -34,7 +34,7 @@
   /* Typography */
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* Borders — matching exact prototype dimensions */
+  /* Borders: exact prototype dimensions */
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -103,12 +103,6 @@ input, textarea {
 @keyframes contentFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-
-@keyframes scaleComplete {
-  0% { transform: scale(1); background-color: var(--bg-white); }
-  50% { transform: scale(0.96); background-color: var(--green-bg); }
-  100% { transform: scale(0.96); background-color: var(--green-bg); }
 }
 
 /* ===== MOBILE SHELL ===== */
@@ -379,12 +373,6 @@ input, textarea {
   color: var(--text-secondary);
 }
 
-.hint-text {
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-top: 8px;
-}
-
 /* ===== TASK SECTIONS ===== */
 .task-list {
   flex: 1;
@@ -486,10 +474,6 @@ input, textarea {
   border-radius: 7px 9px 8px 9px;
 }
 
-.task-card.completing {
-  animation: scaleComplete 260ms ease-out forwards;
-}
-
 .task-card-body {
   flex: 1;
   min-width: 0;
@@ -533,13 +517,6 @@ input, textarea {
   margin-top: 2px;
 }
 
-.task-card-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-  z-index: 12;
-}
-
 .task-card-collab-badge {
   font-size: 10px;
   font-weight: 600;
@@ -548,41 +525,6 @@ input, textarea {
   border-radius: var(--radius-pill);
   padding: 3px 6px;
   flex-shrink: 0;
-}
-
-.task-action-btn {
-  width: 26px;
-  height: 24px;
-  border-radius: var(--radius-sm);
-  border: 1.5px solid transparent;
-  background: var(--bg-white);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  line-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 200ms ease;
-}
-
-.task-action-btn:hover {
-  background: #f3f4f6;
-}
-
-.task-checkbox {
-  width: 15px;
-  height: 15px;
-  border: 1.5px solid transparent;
-  border-radius: var(--radius-xs);
-  background: var(--bg-white);
-  flex-shrink: 0;
-  cursor: pointer;
-  padding: 0;
-  margin-top: 1px;
-  transition: background 200ms ease;
-  z-index: 12;
 }
 
 /* ===== DONE SECTION HEADER ===== */
@@ -700,6 +642,21 @@ input, textarea {
   margin: 0 auto 14px;
 }
 
+.detail-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 13;
+}
+
 /* ===== DETAIL SHEET ===== */
 .detail-title {
   font-size: 18px;
@@ -767,6 +724,12 @@ input, textarea {
 .detail-change-link {
   font-size: 11px;
   z-index: 12;
+}
+
+.detail-assigned-by {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
 }
 
 .detail-collaborators {
@@ -1049,6 +1012,55 @@ input, textarea {
   margin-top: 16px;
 }
 
+.detail-delete-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.detail-delete-btn {
+  font-size: 12px;
+  color: var(--red);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.detail-delete-confirm-text {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.detail-delete-confirm-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.detail-delete-confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.detail-delete-cancel-btn {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
 .detail-action-btn {
   flex: 1;
   border: 1.5px solid transparent;
@@ -1064,6 +1076,11 @@ input, textarea {
 
 .detail-action-btn:hover {
   opacity: 0.9;
+}
+
+.detail-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .detail-action-done {

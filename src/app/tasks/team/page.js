@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { todayStr, dayDiff, getCapacityLabel, getCapacityPercent } from '@/lib/utils';
 import { useRough } from '@/lib/hooks/useRough';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import TaskCard from '@/components/TaskCard';
 import TaskDetail from '@/components/TaskDetail';
 
 export default function TeamPage() {
@@ -14,7 +15,7 @@ export default function TeamPage() {
   const [profiles, setProfiles] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [currentProfile, setCurrentProfile] = useState(null);
-  
+
   const today = todayStr();
   const [selectedTaskId, setSelectedTaskId] = useState(null);
 
@@ -59,6 +60,14 @@ export default function TeamPage() {
   // Filter tasks
   const blocked = tasks.filter((t) => t.status === 'blocked');
   const overdue = tasks.filter((t) => t.status !== 'done' && dayDiff(today, t.date) > 0);
+
+  // Whole team's tasks for today, grouped by status (unlike Today, which is personal).
+  const todayAll = tasks.filter((t) => t.date === today);
+  const todayBlocked = todayAll.filter((t) => t.status === 'blocked');
+  const todayInProgress = todayAll.filter((t) => t.status === 'inprogress');
+  const todayTodo = todayAll.filter((t) => t.status === 'todo');
+  const todayDone = todayAll.filter((t) => t.status === 'done');
+  const hasAnyToday = todayAll.length > 0;
 
   const teamWorkload = profiles.map((p) => {
     const assignedCount = tasks.filter((t) => t.assignee_id === p.id && t.status !== 'done').length;
@@ -168,6 +177,80 @@ export default function TeamPage() {
               <path d="M8 40c8-14 16 14 24 0s16-14 24 0" stroke="#22c55e" fill="none" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
             <div className="flowing-title">Team is flowing</div>
+          </div>
+        )}
+
+        {/* Everyone's tasks for today */}
+        <div className="workload-title" style={{ marginTop: 20 }}>Today, Whole Team</div>
+        {!hasAnyToday && (
+          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 12 }}>
+            Nothing on the board for today.
+          </div>
+        )}
+
+        {todayBlocked.length > 0 && (
+          <div className="task-section task-section-blocked" data-rough="rect" data-rough-radius="8" data-rough-color="#ef4444">
+            <div className="section-header">
+              <span className="section-dot" style={{ background: '#ef4444' }} />
+              <span className="section-title">Blocked</span>
+            </div>
+            {todayBlocked.map((t) => (
+              <TaskCard
+                key={t.id}
+                task={t}
+                variant="blocked"
+                profiles={profiles}
+                onOpen={setSelectedTaskId}
+              />
+            ))}
+          </div>
+        )}
+
+        {todayInProgress.length > 0 && (
+          <div className="task-section task-section-inprogress" data-rough="rect" data-rough-radius="8" data-rough-color="#f59e0b">
+            <div className="section-header">
+              <span className="section-dot" style={{ background: '#f59e0b' }} />
+              <span className="section-title">In Progress</span>
+            </div>
+            {todayInProgress.map((t) => (
+              <TaskCard
+                key={t.id}
+                task={t}
+                variant="inprogress"
+                profiles={profiles}
+                onOpen={setSelectedTaskId}
+              />
+            ))}
+          </div>
+        )}
+
+        {todayTodo.length > 0 && (
+          <div className="task-section" data-rough="rect" data-rough-radius="8">
+            <div className="section-header">
+              <span className="section-dot" style={{ background: '#3b82f6' }} />
+              <span className="section-title">To Do</span>
+            </div>
+            {todayTodo.map((t) => (
+              <TaskCard
+                key={t.id}
+                task={t}
+                variant="todo"
+                profiles={profiles}
+                onOpen={setSelectedTaskId}
+              />
+            ))}
+          </div>
+        )}
+
+        {todayDone.length > 0 && (
+          <div className="task-section" data-rough="rect" data-rough-radius="8">
+            <div className="section-header">
+              <span className="section-dot" style={{ background: '#22c55e' }} />
+              <span className="section-title">Done</span>
+            </div>
+            {todayDone.map((t) => (
+              <TaskCard key={t.id} task={t} variant="done" profiles={profiles} onOpen={setSelectedTaskId} />
+            ))}
           </div>
         )}
       </div>

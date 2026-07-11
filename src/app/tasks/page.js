@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { todayStr, addDays, getTodayHeader, STATUS_META, PRIORITY_OPTIONS } from '@/lib/utils';
+import { todayStr, getTodayHeader, STATUS_META, PRIORITY_OPTIONS } from '@/lib/utils';
 import { useRough } from '@/lib/hooks/useRough';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import TaskCard from '@/components/TaskCard';
@@ -32,7 +32,6 @@ export default function TodayPage() {
   // UI state
   const [expandedSections, setExpandedSections] = useState({});
   const [doneExpanded, setDoneExpanded] = useState(false);
-  const [completingId, setCompletingId] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [showCreateSheet, setShowCreateSheet] = useState(false);
 
@@ -96,12 +95,18 @@ export default function TodayPage() {
     }
   }, [loading]);
 
+  // Today is a personal view: only tasks assigned to you, or where you're a collaborator.
+  // A task with a collaborator shows up in both the assignee's and the collaborator's Today.
+  const myTasks = tasks.filter(
+    (t) => t.assignee_id === currentUser?.id || t.collaborator_ids?.includes(currentUser?.id)
+  );
+
   // Filter tasks
-  const todayTasks = tasks.filter((t) => t.date === today);
+  const todayTasks = myTasks.filter((t) => t.date === today);
   const blocked = todayTasks.filter((t) => t.status === 'blocked');
   const inProgress = todayTasks.filter((t) => t.status === 'inprogress');
   const todo = todayTasks.filter((t) => t.status === 'todo');
-  const allDone = tasks.filter((t) => t.status === 'done').sort((a, b) => 
+  const allDone = myTasks.filter((t) => t.status === 'done').sort((a, b) =>
     new Date(b.created_at) - new Date(a.created_at)
   );
 
@@ -112,49 +117,11 @@ export default function TodayPage() {
   };
 
   // Re-run Rough.js whenever dynamic lists or focus changes
-  const roughRef = useRough([tasks, loading, quickAddFocused, expandedSections, doneExpanded, completingId]);
+  const roughRef = useRough([tasks, loading, quickAddFocused, expandedSections, doneExpanded]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push('/login');
-  }
-
-  // Fire-and-forget: don't let calendar sync slow down the UI.
-  function syncCalendar(taskId, action) {
-    fetch('/api/calendar/sync-task', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ taskId, action }),
-    }).catch(() => {});
-  }
-
-  async function handleSwipeRight(id) {
-    if (completingId) return;
-    setCompletingId(id);
-    setTimeout(async () => {
-      await supabase.from('tasks').update({ status: 'done' }).eq('id', id);
-      await supabase.from('activity_log').insert({
-        task_id: id,
-        user_id: currentUser?.id,
-        action_text: 'Marked Done.',
-      });
-      syncCalendar(id, 'completed');
-      setCompletingId(null);
-      loadData();
-    }, 260);
-  }
-
-  async function handleSwipeLeft(id) {
-    const task = tasks.find((t) => t.id === id);
-    if (!task) return;
-    const newDate = addDays(task.date, 1);
-    await supabase.from('tasks').update({ date: newDate }).eq('id', id);
-    await supabase.from('activity_log').insert({
-      task_id: id,
-      user_id: currentUser?.id,
-      action_text: 'Pushed back a day.',
-    });
-    loadData();
   }
 
   async function handleQuickAdd() {
@@ -165,7 +132,7 @@ export default function TodayPage() {
     const project = projectList[projectIdx % projectList.length];
     const priority = PRIORITY_OPTIONS[priorityIdx % PRIORITY_OPTIONS.length];
 
-    const { data: created } = await supabase.from('tasks').insert({
+    await supabase.from('tasks').insert({
       name,
       status: 'todo',
       assignee_id: assignee?.id || null,
@@ -174,9 +141,7 @@ export default function TodayPage() {
       date: today,
       deadline: 'Today',
       created_by: currentUser?.id,
-    }).select('id').single();
-
-    if (created) syncCalendar(created.id, 'created');
+    });
 
     setQuickAddValue('');
     setQuickAddFocused(false);
@@ -188,7 +153,7 @@ export default function TodayPage() {
     const projectList = [null, ...projects];
     const project = projectList[projectIdx % projectList.length];
 
-    const { data: created } = await supabase.from('tasks').insert(
+    await supabase.from('tasks').insert(
       items.map((item) => ({
         name: item.name,
         status: 'todo',
@@ -199,9 +164,7 @@ export default function TodayPage() {
         deadline: item.deadline,
         created_by: currentUser?.id,
       }))
-    ).select('id');
-
-    (created || []).forEach((t) => syncCalendar(t.id, 'created'));
+    );
 
     setQuickAddValue('');
     setQuickAddFocused(false);
@@ -234,16 +197,9 @@ export default function TodayPage() {
             Logout
           </button>
           {currentProfile && (
-            <button
-              type="button"
-              onClick={() => router.push('/tasks/settings')}
-              style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
-              aria-label="Settings"
-            >
-              <div className="avatar" style={{ background: currentProfile.avatar_color || '#6366f1' }} data-rough="circle">
-                {currentProfile.initial}
-              </div>
-            </button>
+            <div className="avatar" style={{ background: currentProfile.avatar_color || '#6366f1' }} data-rough="circle">
+              {currentProfile.initial}
+            </div>
           )}
         </div>
       </div>
@@ -293,7 +249,6 @@ export default function TodayPage() {
             </button>
           </div>
         )}
-        <div className="hint-text">Swipe right to finish. Swipe left to push back.</div>
       </div>
 
       {/* Task List */}
@@ -326,9 +281,6 @@ export default function TodayPage() {
                 variant="blocked"
                 profiles={profiles}
                 onOpen={setSelectedTaskId}
-                onSwipeLeft={handleSwipeLeft}
-                onSwipeRight={handleSwipeRight}
-                completing={t.id === completingId}
               />
             ))}
             {!expandedSections.blocked && blocked.length > MAX_VISIBLE && (
@@ -356,9 +308,6 @@ export default function TodayPage() {
                 variant="inprogress"
                 profiles={profiles}
                 onOpen={setSelectedTaskId}
-                onSwipeLeft={handleSwipeLeft}
-                onSwipeRight={handleSwipeRight}
-                completing={t.id === completingId}
               />
             ))}
             {!expandedSections.inprogress && inProgress.length > MAX_VISIBLE && (
@@ -386,9 +335,6 @@ export default function TodayPage() {
                 variant="todo"
                 profiles={profiles}
                 onOpen={setSelectedTaskId}
-                onSwipeLeft={handleSwipeLeft}
-                onSwipeRight={handleSwipeRight}
-                completing={t.id === completingId}
               />
             ))}
             {!expandedSections.todo && todo.length > MAX_VISIBLE && (
@@ -422,8 +368,6 @@ export default function TodayPage() {
                     variant="done"
                     profiles={profiles}
                     onOpen={setSelectedTaskId}
-                    onSwipeLeft={handleSwipeLeft}
-                    onSwipeRight={handleSwipeRight}
                   />
                 ))}
               </div>
