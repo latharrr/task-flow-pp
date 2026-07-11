@@ -74,25 +74,6 @@ export default function TeamPage() {
     <div ref={roughRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '0 0 16px', overflowY: 'auto', animation: 'contentFadeIn 200ms ease-out' }}>
       <div className="page-header" style={{ paddingBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="page-title">Team Pulse</div>
-        <a
-          href="/TaskFlow.apk"
-          download
-          style={{
-            fontSize: 11,
-            fontWeight: '700',
-            color: '#ffffff',
-            background: '#22c55e',
-            padding: '4px 8px',
-            borderRadius: '5px',
-            border: '1.5px solid #111827',
-            boxShadow: '1.5px 1.5px 0px 0px #111827',
-            textDecoration: 'none',
-            zIndex: 12,
-            position: 'relative'
-          }}
-        >
-          Download APK
-        </a>
       </div>
 
       <div style={{ padding: '0 16px' }}>

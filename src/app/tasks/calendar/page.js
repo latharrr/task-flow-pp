@@ -118,25 +118,6 @@ export default function CalendarPage() {
           <button onClick={handleNextMonth} style={{ fontSize: 18, color: '#6b7280' }}>›</button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <a
-            href="/TaskFlow.apk"
-            download
-            style={{
-              fontSize: 11,
-              fontWeight: '700',
-              color: '#ffffff',
-              background: '#22c55e',
-              padding: '4px 8px',
-              borderRadius: '5px',
-              border: '1.5px solid #111827',
-              boxShadow: '1.5px 1.5px 0px 0px #111827',
-              textDecoration: 'none',
-              zIndex: 12,
-              position: 'relative'
-            }}
-          >
-            Download APK
-          </a>
           <button
             className="calendar-today-btn"
             onClick={() => {
