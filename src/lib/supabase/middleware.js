@@ -31,6 +31,11 @@ export async function updateSession(request) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Allow public auth API routes (signup, password reset) for unauthenticated users
+  if (pathname.startsWith('/api/auth/')) {
+    return supabaseResponse;
+  }
+
   // Allow login page for unauthenticated users
   if (pathname === '/login') {
     if (user) {
