@@ -864,12 +864,38 @@ input, textarea {
 }
 
 .attachment-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   color: var(--text-primary);
   border: 1.5px solid transparent;
   border-radius: var(--radius-pill);
-  padding: 6px 12px;
+  padding: 6px 8px 6px 12px;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.attachment-pill-link {
+  color: var(--text-primary);
+  text-decoration: none;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-pill-link:hover {
+  text-decoration: underline;
+}
+
+.attachment-remove {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
   flex-shrink: 0;
 }
 
@@ -884,6 +910,18 @@ input, textarea {
   background: var(--bg-white);
   cursor: pointer;
   z-index: 12;
+}
+
+.attachment-add:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.attachment-error {
+  font-size: 11px;
+  color: var(--red);
+  margin-top: -8px;
+  margin-bottom: 14px;
 }
 
 /* ===== BLOCKER REASON ===== */

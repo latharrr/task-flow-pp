@@ -20,7 +20,10 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
   const [activityExpanded, setActivityExpanded] = useState(false);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [showTeamPicker, setShowTeamPicker] = useState(null); // null | 'reassign' | 'handoff'
+  const [uploading, setUploading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState('');
   const trackingRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     setTask(initialTask || null);
@@ -48,7 +51,7 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
   }
 
   // Draw hand-drawn sketched borders inside the sheet whenever content changes
-  const roughRef = useRough([task, loading, editingName, showStatusPicker, showTeamPicker, subtasks, comments, attachments, activityExpanded]);
+  const roughRef = useRough([task, loading, editingName, showStatusPicker, showTeamPicker, subtasks, comments, attachments, activityExpanded, uploading]);
 
   async function updateTask(updates) {
     await supabase.from('tasks').update(updates).eq('id', taskId);
@@ -116,13 +119,60 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
     setCommentDraft('');
   }
 
-  async function handleAddAttachment() {
-    const { data } = await supabase
+  const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10MB
+
+  function storagePathFromUrl(url) {
+    const marker = '/attachments/';
+    const idx = url?.indexOf(marker) ?? -1;
+    return idx === -1 ? null : url.slice(idx + marker.length);
+  }
+
+  async function handleFileSelected(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+
+    setAttachmentError('');
+
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      setAttachmentError('File is too large (max 10MB).');
+      return;
+    }
+
+    setUploading(true);
+    const path = `${taskId}/${Date.now()}-${file.name}`;
+
+    const { error: uploadError } = await supabase.storage
       .from('attachments')
-      .insert({ task_id: taskId, name: 'document.txt', uploaded_by: currentUser?.id })
+      .upload(path, file);
+
+    if (uploadError) {
+      setAttachmentError(uploadError.message);
+      setUploading(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('attachments').getPublicUrl(path);
+
+    const { data, error: insertError } = await supabase
+      .from('attachments')
+      .insert({ task_id: taskId, name: file.name, file_url: publicUrl, uploaded_by: currentUser?.id })
       .select()
       .single();
-    if (data) setAttachments((prev) => [...prev, data]);
+
+    if (insertError) {
+      setAttachmentError(insertError.message);
+    } else if (data) {
+      setAttachments((prev) => [...prev, data]);
+    }
+    setUploading(false);
+  }
+
+  async function handleRemoveAttachment(att) {
+    const path = storagePathFromUrl(att.file_url);
+    if (path) await supabase.storage.from('attachments').remove([path]);
+    await supabase.from('attachments').delete().eq('id', att.id);
+    setAttachments((prev) => prev.filter((a) => a.id !== att.id));
   }
 
   async function handleBlockerReasonChange(e) {
@@ -312,13 +362,38 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
         <div className="attachments-row">
           {attachments.map((att) => (
             <span key={att.id} className="attachment-pill" data-rough="rect" data-rough-radius="999">
-              {att.name}
+              <a href={att.file_url} target="_blank" rel="noopener noreferrer" className="attachment-pill-link">
+                {att.name}
+              </a>
+              <button
+                type="button"
+                className="attachment-remove"
+                onClick={() => handleRemoveAttachment(att)}
+                aria-label={`Remove ${att.name}`}
+              >
+                ×
+              </button>
             </span>
           ))}
-          <button className="attachment-add" onClick={handleAddAttachment} data-rough="rect" data-rough-radius="999">
-            Add
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileSelected}
+            style={{ display: 'none' }}
+          />
+          <button
+            className="attachment-add"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            data-rough="rect"
+            data-rough-radius="999"
+          >
+            {uploading ? 'Uploading…' : 'Add'}
           </button>
         </div>
+        {attachmentError && (
+          <div className="attachment-error">{attachmentError}</div>
+        )}
 
         {/* Blocker Reason */}
         {task.status === 'blocked' && (
