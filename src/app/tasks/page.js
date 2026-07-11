@@ -119,6 +119,15 @@ export default function TodayPage() {
     router.push('/login');
   }
 
+  // Fire-and-forget: don't let calendar sync slow down the UI.
+  function syncCalendar(taskId, action) {
+    fetch('/api/calendar/sync-task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId, action }),
+    }).catch(() => {});
+  }
+
   async function handleSwipeRight(id) {
     if (completingId) return;
     setCompletingId(id);
@@ -129,6 +138,7 @@ export default function TodayPage() {
         user_id: currentUser?.id,
         action_text: 'Marked Done.',
       });
+      syncCalendar(id, 'completed');
       setCompletingId(null);
       loadData();
     }, 260);
@@ -155,7 +165,7 @@ export default function TodayPage() {
     const project = projectList[projectIdx % projectList.length];
     const priority = PRIORITY_OPTIONS[priorityIdx % PRIORITY_OPTIONS.length];
 
-    await supabase.from('tasks').insert({
+    const { data: created } = await supabase.from('tasks').insert({
       name,
       status: 'todo',
       assignee_id: assignee?.id || null,
@@ -164,8 +174,10 @@ export default function TodayPage() {
       date: today,
       deadline: 'Today',
       created_by: currentUser?.id,
-    });
-    
+    }).select('id').single();
+
+    if (created) syncCalendar(created.id, 'created');
+
     setQuickAddValue('');
     setQuickAddFocused(false);
     loadData();
@@ -176,7 +188,7 @@ export default function TodayPage() {
     const projectList = [null, ...projects];
     const project = projectList[projectIdx % projectList.length];
 
-    await supabase.from('tasks').insert(
+    const { data: created } = await supabase.from('tasks').insert(
       items.map((item) => ({
         name: item.name,
         status: 'todo',
@@ -187,7 +199,9 @@ export default function TodayPage() {
         deadline: item.deadline,
         created_by: currentUser?.id,
       }))
-    );
+    ).select('id');
+
+    (created || []).forEach((t) => syncCalendar(t.id, 'created'));
 
     setQuickAddValue('');
     setQuickAddFocused(false);
@@ -220,9 +234,16 @@ export default function TodayPage() {
             Logout
           </button>
           {currentProfile && (
-            <div className="avatar" style={{ background: currentProfile.avatar_color || '#6366f1' }} data-rough="circle">
-              {currentProfile.initial}
-            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/tasks/settings')}
+              style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
+              aria-label="Settings"
+            >
+              <div className="avatar" style={{ background: currentProfile.avatar_color || '#6366f1' }} data-rough="circle">
+                {currentProfile.initial}
+              </div>
+            </button>
           )}
         </div>
       </div>

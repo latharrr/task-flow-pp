@@ -68,9 +68,19 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
     if (data) setActivity((prev) => [data, ...prev]);
   }
 
+  // Fire-and-forget: don't let calendar sync slow down the UI.
+  function syncCalendar(action) {
+    fetch('/api/calendar/sync-task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId, action }),
+    }).catch(() => {});
+  }
+
   async function handleStatusChange(status) {
     await updateTask({ status });
     await addActivity(`Changed status to ${STATUS_META[status].label}.`);
+    if (status === 'done') syncCalendar('completed');
     setShowStatusPicker(false);
   }
 
@@ -187,6 +197,7 @@ export default function TaskDetail({ taskId, initialTask, profiles, currentUser,
   async function handleMarkDone() {
     await updateTask({ status: 'done', tracking: false });
     await addActivity('Marked Done.');
+    syncCalendar('completed');
     if (trackingRef.current) {
       clearInterval(trackingRef.current);
       trackingRef.current = null;
