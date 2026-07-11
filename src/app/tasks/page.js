@@ -8,6 +8,7 @@ import { useRough } from '@/lib/hooks/useRough';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import TaskCard from '@/components/TaskCard';
 import TaskDetail from '@/components/TaskDetail';
+import TaskCreateSheet from '@/components/TaskCreateSheet';
 import EmptyState from '@/components/EmptyState';
 
 export default function TodayPage() {
@@ -33,6 +34,7 @@ export default function TodayPage() {
   const [doneExpanded, setDoneExpanded] = useState(false);
   const [completingId, setCompletingId] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
 
   const today = todayStr();
 
@@ -168,6 +170,30 @@ export default function TodayPage() {
     loadData();
   }
 
+  async function handleBulkCreate(items) {
+    const assignee = profiles[assigneeIdx % Math.max(profiles.length, 1)];
+    const projectList = [null, ...projects];
+    const project = projectList[projectIdx % projectList.length];
+
+    await supabase.from('tasks').insert(
+      items.map((item) => ({
+        name: item.name,
+        status: 'todo',
+        assignee_id: assignee?.id || null,
+        project_id: project?.id || null,
+        priority: item.priority,
+        date: item.date,
+        deadline: item.deadline,
+        created_by: currentUser?.id,
+      }))
+    );
+
+    setQuickAddValue('');
+    setQuickAddFocused(false);
+    setShowCreateSheet(false);
+    loadData();
+  }
+
   if (loading) return <LoadingSkeleton />;
 
   const showChips = quickAddFocused || quickAddValue.trim().length > 0;
@@ -215,7 +241,7 @@ export default function TodayPage() {
               placeholder="What needs to happen?"
             />
           </div>
-          <button className="quick-add-btn" onClick={handleQuickAdd} data-rough="circle">+</button>
+          <button className="quick-add-btn" onClick={() => setShowCreateSheet(true)} data-rough="circle">+</button>
         </div>
         {showChips && (
           <div className="chips-row">
@@ -393,6 +419,15 @@ export default function TodayPage() {
           currentUser={{ ...currentUser, ...currentProfile }}
           onClose={() => setSelectedTaskId(null)}
           onRefresh={loadData}
+        />
+      )}
+
+      {/* Detailed multi-task creation sheet */}
+      {showCreateSheet && (
+        <TaskCreateSheet
+          initialName={quickAddValue}
+          onClose={() => setShowCreateSheet(false)}
+          onCreate={handleBulkCreate}
         />
       )}
     </div>

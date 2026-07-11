@@ -1047,6 +1047,130 @@ input, textarea {
   color: var(--text-primary);
 }
 
+/* ===== TASK CREATE SHEET ===== */
+.task-create-sheet {
+  padding-bottom: 20px;
+}
+
+.task-create-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+.task-create-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.task-create-row {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+}
+
+.task-create-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-create-index {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.task-create-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-primary);
+  padding: 4px 0;
+}
+
+.task-create-input::placeholder {
+  color: var(--border-light);
+}
+
+.task-create-remove {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.task-create-options {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.task-create-chip {
+  font-size: 11px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.task-create-chip-active {
+  background: var(--indigo-light);
+  border-color: var(--indigo);
+  color: var(--indigo);
+  font-weight: 600;
+}
+
+.task-create-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+.task-create-add-row {
+  width: 100%;
+  margin-top: 12px;
+  padding: 9px 0;
+  border: 1.5px dashed var(--border-light);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.task-create-add-row:hover {
+  border-color: var(--indigo);
+  color: var(--indigo);
+}
+
 /* ===== CALENDAR ===== */
 .calendar-header {
   display: flex;
